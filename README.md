@@ -34,6 +34,8 @@ mlopsnew/
 ---
 
 ## 🚀 How to Run the Project (Direct Commands)
+## Activate venv first
+.\.venv\Scripts\Activate.ps1 
 
 ### 1. Train the Machine Learning Model
 ```bash
