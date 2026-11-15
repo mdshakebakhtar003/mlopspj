@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mlops-api-config
+  namespace: mlops-prod
+data:
+  ENVIRONMENT: "production"
+  MODEL_PATH: "/app/artifacts/model.joblib"
+  METRICS_PATH: "/app/artifacts/metrics.json"
+  MODEL_VERSION: "v1.0.0"
+  PORT: "8000"
+  LOG_LEVEL: "INFO"
