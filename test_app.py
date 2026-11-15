@@ -1,3 +1,4 @@
+import os
 from fastapi.testclient import TestClient
 from app import app
 from train import train
@@ -6,9 +7,7 @@ client = TestClient(app)
 
 
 def test_train_creates_model():
-    # Verify training script creates the model file
     train()
-    import os
     assert os.path.exists("model.joblib")
 
 

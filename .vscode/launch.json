@@ -1,0 +1,29 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "1. Train ML Model (train.py)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/train.py",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "2. Run FastAPI Server (app.py)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "uvicorn",
+      "args": ["app:app", "--host", "127.0.0.1", "--port", "8000", "--reload"],
+      "jinja": true,
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "3. Run Tests (pytest)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": ["-v", "test_app.py"],
+      "console": "integratedTerminal"
+    }
+  ]
+}

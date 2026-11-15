@@ -12,7 +12,6 @@ app = FastAPI(
 MODEL_FILE = "model.joblib"
 TARGET_NAMES = ["setosa", "versicolor", "virginica"]
 
-# Load model if it exists
 model = None
 if os.path.exists(MODEL_FILE):
     model = joblib.load(MODEL_FILE)
