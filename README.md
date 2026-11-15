@@ -1,364 +1,133 @@
-# 🚀 End-to-End MLOps Project: Customer Churn Predictor
-### *Hands-on Architecture featuring Scikit-Learn, FastAPI, Docker, Kubernetes, Prometheus & GitHub Actions CI/CD*
-
-[![MLOps CI/CD](https://github.com/your-username/mlops-churn-predictor/actions/workflows/ci-cd.yaml/badge.svg)](https://github.com/your-username/mlops-churn-predictor/actions)
-[![Python 3.11](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-[![Docker](https://img.shields.io/badge/Docker-Multi--stage-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
-[![Kubernetes](https://img.shields.io/badge/Kubernetes-Production--Ready-326CE5?logo=kubernetes&logoColor=white)](https://kubernetes.io/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-Serving-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+# 🎯 Simple MLOps Project: End-to-End Pipeline
+> **A clean, easy-to-understand MLOps demonstration covering Model Training, FastAPI Serving, Docker, Kubernetes, and CI/CD.**
 
 ---
 
-## 📌 Project Architecture
+## 💡 What This Project Demonstrates to Your Manager
 
-```mermaid
-flowchart TD
-    subgraph Data_and_Model ["1. Model Pipeline (src/)"]
-        RawData["Synthetic / Real Data\n(data/customer_churn.csv)"] --> Preprocess["ColumnTransformer\n(Scaling + One-Hot)"]
-        Preprocess --> Trainer["Random Forest Classifier\n(src/train.py)"]
-        Trainer --> Artifacts["Saved Artifacts\n(model.joblib & metrics.json)"]
-    end
+This project illustrates the complete lifecycle of putting a Machine Learning model into production using modern DevOps/MLOps industry practices, kept simple and accessible:
 
-    subgraph Serving_API ["2. FastAPI Serving (app/)"]
-        Artifacts --> Loader["Model Loader Singleton"]
-        Loader --> FastAPIServer["FastAPI App (app/main.py)\n- /predict\n- /predict/batch\n- /health/live & /health/ready\n- /metrics"]
-    end
-
-    subgraph Containerization ["3. Docker & Compose"]
-        FastAPIServer --> DockerImg["Multi-Stage Docker Image\n(non-root appuser, python:3.11-slim)"]
-        DockerImg --> Compose["docker-compose.yml\n(API + Prometheus Scraper)"]
-    end
-
-    subgraph Orchestration ["4. Kubernetes Production Cluster (k8s/)"]
-        DockerImg --> Deploy["Deployment (2 Replicas)\n- RollingUpdate\n- Resource Limits\n- Probes (Liveness & Readiness)"]
-        ConfigMap["ConfigMap & Secrets"] --> Deploy
-        Deploy --> Svc["Service (LoadBalancer)"]
-        Deploy --> HPA["Horizontal Pod Autoscaler (HPA)"]
-    end
-
-    subgraph CICD ["5. GitHub Actions CI/CD (.github/workflows/)"]
-        GitPush["git push origin main"] --> LintJob["Stage 1: Flake8 Linting"]
-        LintJob --> TrainGate["Stage 2: Model Training & Metric Gates"]
-        TrainGate --> PytestJob["Stage 3: Pytest Suite"]
-        PytestJob --> DockerBuildJob["Stage 4: Docker Build & Health Check"]
-        DockerBuildJob --> K8sLint["Stage 5: Kubernetes Manifests Dry-Run"]
-    end
-```
+| MLOps Pillar | File | What it does |
+| :--- | :--- | :--- |
+| **1. Model Training** | [`train.py`](train.py) | Trains a classification model on the Iris dataset and saves the artifact (`model.joblib`). |
+| **2. API Serving** | [`app.py`](app.py) | Serves the model via a high-performance FastAPI REST API (`/health` and `/predict`). |
+| **3. Automated Testing** | [`test_app.py`](test_app.py) | Tests the model training output and API endpoints using `pytest`. |
+| **4. Containerization** | [`Dockerfile`](Dockerfile) | Packages the application, dependencies, and model into an immutable Docker image. |
+| **5. Orchestration** | [`k8s/deployment.yaml`](k8s/deployment.yaml) | Deploys 2 replicated pods with a Kubernetes Service for high availability and load balancing. |
+| **6. CI/CD Automation** | [`.github/workflows/cicd.yaml`](.github/workflows/cicd.yaml) | Automatically runs tests and builds the Docker image on every GitHub push. |
 
 ---
 
-## 📂 Repository Structure
+## 📂 Project Structure (Flat & Minimal)
 
 ```text
-├── .github/
-│   └── workflows/
-│       └── ci-cd.yaml          # Automated CI/CD pipeline (Lint, Train, Test, Docker, K8s)
-├── app/
-│   ├── __init__.py
-│   ├── main.py                 # FastAPI inference service + Prometheus instrumentation
-│   ├── model_loader.py         # Thread-safe model artifact loader
-│   └── schemas.py              # Pydantic v2 schemas for request/response validation
-├── src/
-│   ├── __init__.py
-│   ├── data_pipeline.py        # Data generator, split, and Scikit-Learn ColumnTransformer
-│   └── train.py                # Model training, metric calculation, artifact persistence
-├── tests/
-│   ├── __init__.py
-│   ├── test_api.py             # API endpoints, health probes, validation & error tests
-│   └── test_train.py           # Data generation, pipeline transformation & model tests
+mlopsnew/
+├── .github/workflows/
+│   └── cicd.yaml        # 30-line GitHub Actions CI/CD workflow
 ├── k8s/
-│   ├── namespace.yaml          # Production namespace (mlops-prod)
-│   ├── configmap.yaml          # Environment configs (MODEL_PATH, LOG_LEVEL, PORT)
-│   ├── secret.yaml             # API secret key template
-│   ├── deployment.yaml         # 2 replicas, securityContext, probes, resource limits
-│   ├── service.yaml            # LoadBalancer service exposing port 80 -> 8000
-│   ├── hpa.yaml                # Autoscaling from 2 to 5 pods on CPU/Memory thresholds
-│   └── kustomization.yaml      # Declarative resource bundle
-├── artifacts/
-│   ├── model.joblib            # Trained Scikit-Learn pipeline
-│   ├── metrics.json            # Accuracy, F1, Precision, Recall, ROC-AUC
-│   └── sample_input.json       # Clean sample test vector
-├── Dockerfile                  # Secure, multi-stage, non-root container image
-├── .dockerignore               # Slim build context
-├── docker-compose.yml          # Local full-stack runtime (FastAPI + Prometheus)
-├── prometheus.yml              # Prometheus scraping configuration
-├── requirements.txt            # Pinned project dependencies
-├── .flake8                     # Linting configuration
-├── Makefile                    # Standard commands for Linux/macOS
-├── run.ps1                     # Windows PowerShell one-click CLI
-└── README.md                   # Comprehensive guide
+│   └── deployment.yaml  # Kubernetes Deployment (2 replicas) + Service
+├── app.py               # FastAPI application (/health and /predict)
+├── train.py             # Trains model & exports model.joblib
+├── test_app.py          # Pytest automated test suite
+├── Dockerfile           # Minimal 9-line Dockerfile
+├── requirements.txt     # Python dependencies
+├── run.ps1              # One-click command helper for PowerShell
+└── README.md            # Manager presentation guide
 ```
 
 ---
 
-## 🛠️ Step-by-Step Hands-on Guide
+## 🎬 5-Minute Live Demo Script for Your Manager
 
-### Step 1: Environment Setup
+You can walk your manager through this 5-step demo using the included `run.ps1` helper:
 
-#### Option A: Windows (PowerShell)
+### Step 1: Train the Machine Learning Model
 ```powershell
-# Run the built-in helper script:
-.\run.ps1 setup
-```
-
-#### Option B: Manual / Linux / macOS
-```bash
-python3 -m venv .venv
-source .venv/bin/activate       # On Windows: .\.venv\Scripts\Activate.ps1
-pip install --upgrade pip
-pip install -r requirements.txt
-```
-
----
-
-### Step 2: Train the Machine Learning Model
-
-The training script generates synthetic customer data (or loads `data/customer_churn.csv`), builds a composite `ColumnTransformer` (standard scaler for numericals + one-hot encoder for categoricals), trains a `RandomForestClassifier`, evaluates classification metrics, and exports `artifacts/model.joblib` and `artifacts/metrics.json`.
-
-```bash
-# Using helper:
 .\run.ps1 train
-
-# Or directly:
-python -m src.train
 ```
-
-**Output:**
-```text
-============================================================
-🚀 Starting MLOps Training Pipeline
-============================================================
-📊 Dataset loaded: 2000 rows, 11 columns
-✂️  Train set: 1600 samples | Test set: 400 samples
-🏋️  Training Random Forest model...
-
-📈 Evaluation Metrics:
-   - accuracy: 0.7625
-   - precision: 0.3000
-   - recall: 0.3134
-   - f1_score: 0.3066
-   - roc_auc: 0.6494
-   - train_samples: 1600
-   - test_samples: 400
-💾 Model saved to: artifacts/model.joblib
-💾 Metrics saved to: artifacts/metrics.json
-```
+> **What to say:** *"Here, `train.py` loads the dataset, splits it into training and testing sets, trains a Random Forest model, and serializes the trained model into `model.joblib`."*
 
 ---
 
-### Step 3: Run Automated Tests & Code Linting
-
-Run unit and integration tests covering the pipeline, model output, FastAPI endpoints, input validation, and Prometheus metrics.
-
-```bash
-# Run pytest:
-.\run.ps1 test
-# Or: pytest -v tests/
-
-# Run flake8 linter:
-flake8 .
-```
-
----
-
-### Step 4: Run the API Server Locally
-
-Launch the FastAPI application with live reloading:
-
-```bash
-.\run.ps1 serve
-# Or: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-```
-
-Once running:
-- **Interactive Swagger Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
-- **Liveness Probe**: [http://localhost:8000/health/live](http://localhost:8000/health/live)
-- **Readiness Probe**: [http://localhost:8000/health/ready](http://localhost:8000/health/ready)
-- **Prometheus Metrics**: [http://localhost:8000/metrics](http://localhost:8000/metrics)
-- **Model Info**: [http://localhost:8000/model/info](http://localhost:8000/model/info)
-
-#### Test a Prediction via CLI:
+### Step 2: Run Automated Tests
 ```powershell
-.\run.ps1 predict-sample
+.\run.ps1 test
 ```
-Or with `curl`:
-```bash
-curl -X POST "http://localhost:8000/predict" \
-     -H "Content-Type: application/json" \
-     -d '{
-       "credit_score": 650,
-       "country": "Germany",
-       "gender": "Female",
-       "age": 42,
-       "tenure": 5,
-       "balance": 85000.5,
-       "num_of_products": 2,
-       "has_cr_card": 1,
-       "is_active_member": 1,
-       "estimated_salary": 65000.0
-     }'
-```
-
-**Response:**
-```json
-{
-  "churn_prediction": 0,
-  "churn_probability": 0.3412,
-  "risk_level": "Low",
-  "model_version": "v1.0.0"
-}
-```
+> **What to say:** *"Before deploying anything to production, our automated tests in `test_app.py` ensure the model is created properly and our API endpoints respond with expected predictions."*
 
 ---
 
-### Step 5: Containerize with Docker
-
-The provided `Dockerfile` uses **multi-stage build** principles:
-1. **Builder Stage**: Installs compiler tools and builds wheels.
-2. **Runtime Stage**: Uses minimal `python:3.11-slim`, copies virtualenv, creates a dedicated non-root user `appuser` (UID 10001), and configures a built-in Docker `HEALTHCHECK`.
-
-```bash
-# 1. Build Docker image
-docker build -t mlops-churn-api:latest .
-
-# 2. Run container
-docker run -d -p 8000:8000 --name churn-serving mlops-churn-api:latest
-
-# 3. Check health and logs
-docker ps
-docker logs -f churn-serving
-
-# 4. Stop container
-docker stop churn-serving && docker rm churn-serving
+### Step 3: Start the REST API & Test Predictions
+```powershell
+.\run.ps1 serve
 ```
+1. Open the interactive Swagger UI in the browser: **http://localhost:8000/docs**
+2. Show the `/health` endpoint (returns `{"status": "healthy", "model_loaded": true}`).
+3. Open a second PowerShell terminal and run:
+   ```powershell
+   .\run.ps1 predict
+   ```
+> **What to say:** *"FastAPI loads the trained model in memory. When client applications send measurements via JSON, our API instantly predicts the class with sub-millisecond latency."*
 
 ---
 
-### Step 6: Multi-Container Stack (FastAPI + Prometheus) with Docker Compose
-
-Run the API alongside Prometheus to see real-time metrics scraping:
-
-```bash
-# Start both services in background:
-docker-compose up --build -d
-
-# Check running services:
-docker-compose ps
+### Step 4: Docker Containerization
+Show the clean [Dockerfile](Dockerfile):
+```dockerfile
+FROM python:3.11-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+EXPOSE 8000
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
 ```
+Commands to build and run the container:
+```powershell
+# Build image
+.\run.ps1 docker-build
 
-- Open **Prometheus UI**: [http://localhost:9090](http://localhost:9090)
-- In Prometheus expression bar, try querying:
-  - `api_requests_total`
-  - `model_churn_predictions_total`
-  - `api_request_duration_seconds_count`
-
-To stop:
-```bash
-docker-compose down
+# Run container
+.\run.ps1 docker-run
 ```
+> **What to say:** *"By containerizing our ML model with Docker, we eliminate 'it works on my machine' issues. The exact same container image runs locally, in staging, and in cloud production."*
 
 ---
 
-### Step 7: Deploy to Kubernetes (Production-Ready Manifests)
+### Step 5: Kubernetes Orchestration
+Show the clean [k8s/deployment.yaml](k8s/deployment.yaml):
+- **Deployment:** Creates **2 replicas** (pods) of the model container for high availability.
+- **Service:** Exposes port 8000 so incoming user traffic is balanced across both pods.
 
-The manifests in `k8s/` are built according to cloud-native best practices:
-- **`namespace.yaml`**: Isolates resources into `mlops-prod`.
-- **`configmap.yaml` & `secret.yaml`**: Externalizes environment variables and sensitive keys.
-- **`deployment.yaml`**:
-  - `replicas: 2` with `RollingUpdate` strategy (zero downtime updates).
-  - `securityContext`: Enforces non-root user (`runAsNonRoot: true`, UID 10001).
-  - `resources`: CPU and memory requests & limits.
-  - `readinessProbe`: Hits `/health/ready` before sending network traffic.
-  - `livenessProbe`: Hits `/health/live` to restart unresponsive pods.
-  - `startupProbe`: Protects slow initialization models.
-- **`service.yaml`**: Exposes the pods via a LoadBalancer on port 80.
-- **`hpa.yaml`**: Horizontal Pod Autoscaler dynamically scales between 2 to 5 replicas based on CPU/Memory load.
+Deploying to Kubernetes:
+```powershell
+# Deploy
+.\run.ps1 k8s-deploy
 
-#### Local Kubernetes Options on Windows:
-1. **Docker Desktop Kubernetes**: Enable Kubernetes in Docker Desktop Settings -> Apply & Restart.
-2. **Minikube**: `minikube start --driver=docker`
-3. **Kind**: `kind create cluster --name mlops`
-
-#### Deploying:
-```bash
-# Apply all manifests using Kustomize:
-kubectl apply -k k8s/
-
-# Or via PowerShell script:
-.\run.ps1 k8s-apply
-
-# Verify pods, services, and HPA:
-kubectl get all,hpa -n mlops-prod
+# Check pods
+.\run.ps1 k8s-status
 ```
-
-**Sample Output:**
-```text
-NAME                                   READY   STATUS    RESTARTS   AGE
-pod/mlops-churn-api-7b8978cdb5-abcde   1/1     Running   0          45s
-pod/mlops-churn-api-7b8978cdb5-fghij   1/1     Running   0          45s
-
-NAME                          TYPE           CLUSTER-IP      EXTERNAL-IP   PORT(S)
-service/mlops-churn-service   LoadBalancer   10.96.120.45    localhost     80:31234/TCP
-
-NAME                                              REFERENCE                    TARGETS   MINPODS   MAXPODS
-horizontalpodautoscaler.autoscaling/mlops-churn   Deployment/mlops-churn-api   5%/70%    2         5
-```
-
-#### Test Kubernetes Pod Auto-Healing:
-Delete one pod and observe Kubernetes instantly starting a replacement to maintain 2 replicas:
-```bash
-kubectl delete pod -l app=mlops-churn-api -n mlops-prod
-kubectl get pods -n mlops-prod -w
-```
-
-#### Clean up Kubernetes:
-```bash
-kubectl delete -k k8s/
-```
+> **What to say:** *"In production, Kubernetes manages our containers. If one container crashes, Kubernetes immediately spins up a replacement. If traffic spikes, we can increase the replica count seamlessly."*
 
 ---
 
-### Step 8: Continuous Integration & Continuous Delivery (CI/CD)
-
-The workflow defined in `.github/workflows/ci-cd.yaml` executes automatically on every push or pull request to `main`/`master`:
-
+### Step 6: Automated CI/CD (GitHub Actions)
+Show [`.github/workflows/cicd.yaml`](.github/workflows/cicd.yaml):
 ```mermaid
 flowchart LR
-    A["Stage 1: Flake8 Linter"] --> B["Stage 2: Model Train & Quality Gate"]
-    B --> C["Stage 3: Pytest Suite"]
-    C --> D["Stage 4: Docker Build & Probe"]
-    D --> E["Stage 5: K8s Manifest Dry-Run"]
+    A["1. Code Push / PR"] --> B["2. Install Deps"]
+    B --> C["3. Train Model"]
+    C --> D["4. Run Pytest"]
+    D --> E["5. Build Docker Image"]
 ```
-
-1. **Stage 1: Linting**: Fails if Python syntax errors or undefined variables exist.
-2. **Stage 2: Training & Performance Gate**: Trains the model and verifies `accuracy >= 0.65` and `roc_auc >= 0.60`. Uploads artifacts to GitHub.
-3. **Stage 3: Automated Testing**: Executes 11 test cases covering data pipeline, API validation, and metrics.
-4. **Stage 4: Docker Build & Health Check**: Builds image and runs a live test container in the GitHub runner, probing `/health/live` and `/predict`.
-5. **Stage 5: Kubernetes Dry-Run**: Validates manifests with `kubectl apply --dry-run=client -k k8s/`.
-
-#### How to push to your GitHub:
-```bash
-git add .
-git commit -m "feat: initial end-to-end MLOps pipeline"
-git branch -M main
-git remote add origin https://github.com/<your-username>/<your-repo-name>.git
-git push -u origin main
-```
-Navigate to your GitHub repository -> **Actions** tab to watch the automated pipeline execute!
+> **What to say:** *"Whenever a data scientist or engineer pushes changes to GitHub, our CI/CD pipeline triggers automatically. It verifies dependencies, trains the model, runs tests, and builds the Docker image. If any test fails, it prevents broken code from reaching production."*
 
 ---
 
-## 🎯 Summary of Hands-on Skills Mastered
+## 📋 Summary of Key Takeaways
 
-| Domain | Skills Acquired |
-| :--- | :--- |
-| **Machine Learning** | Data pipelines, `ColumnTransformer` feature scaling, train/test split, Random Forest classification, metric evaluation, model artifact serialization (`joblib`). |
-| **API Serving** | FastAPI, Pydantic v2 data models, asynchronous request handling, exception handlers, batch scoring. |
-| **Monitoring** | Prometheus metrics instrumentation (`Counter`, `Histogram`), `/metrics` endpoint, Prometheus server setup. |
-| **Docker** | Multi-stage Docker builds, `.dockerignore` optimization, non-root security context (`appuser`), Docker healthchecks, `docker-compose`. |
-| **Kubernetes** | Declarative YAMLs, Namespaces, ConfigMaps, Secrets, Deployments, Rolling Updates, Liveness & Readiness Probes, Resource requests/limits, Services, HPA autoscaling, Kustomize. |
-| **CI/CD** | GitHub Actions workflows, multi-stage CI pipelines, quality gates, automated artifact storage, container testing in CI, Kubernetes dry-run linting. |
-
----
-
-**Developed for hands-on MLOps mastery! Happy learning!** 🚀
+1. **Reproducibility:** Versioned dependencies in `requirements.txt` and repeatable training in `train.py`.
+2. **Standardization:** Serving ML via standard REST APIs (FastAPI) rather than ad-hoc scripts.
+3. **Portability:** Docker guarantees identical execution in all environments.
+4. **Resilience:** Kubernetes ensures self-healing and zero downtime.
+5. **Quality Assurance:** CI/CD automates testing and container builds on every commit.

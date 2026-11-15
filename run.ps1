@@ -4,101 +4,72 @@
 )
 
 $VENV_PY = ".\.venv\Scripts\python.exe"
-$VENV_PIP = ".\.venv\Scripts\pip.exe"
-$VENV_UVICORN = ".\.venv\Scripts\uvicorn.exe"
 $VENV_PYTEST = ".\.venv\Scripts\pytest.exe"
+$VENV_UVICORN = ".\.venv\Scripts\uvicorn.exe"
 
 function Show-Help {
     Write-Host "==========================================================" -ForegroundColor Cyan
-    Write-Host "  MLOps Customer Churn Project CLI (PowerShell)" -ForegroundColor Cyan
+    Write-Host "  Simple MLOps Project Helper Commands" -ForegroundColor Cyan
     Write-Host "==========================================================" -ForegroundColor Cyan
     Write-Host "Usage: .\run.ps1 <command>`n"
-    Write-Host "Commands:"
-    Write-Host "  setup             Create .venv and install all dependencies"
-    Write-Host "  train             Train model and export artifacts"
-    Write-Host "  test              Run full test suite (pytest)"
-    Write-Host "  serve             Start FastAPI development server (port 8000)"
-    Write-Host "  predict-sample    Send a test prediction request via curl/Invoke-RestMethod"
-    Write-Host "  docker-build      Build the Docker image (mlops-churn-api:latest)"
-    Write-Host "  docker-run        Run the Docker container locally on port 8000"
-    Write-Host "  compose-up        Launch API + Prometheus via Docker Compose"
-    Write-Host "  compose-down      Stop and clean up Docker Compose services"
-    Write-Host "  k8s-apply         Apply all Kubernetes manifests (mlops-prod namespace)"
-    Write-Host "  k8s-status        Check status of pods, services, and HPA in k8s"
-    Write-Host "  k8s-delete        Delete Kubernetes resources"
+    Write-Host "Available Commands:"
+    Write-Host "  train         Train ML model and save 'model.joblib'"
+    Write-Host "  test          Run pytest unit tests"
+    Write-Host "  serve         Start FastAPI local server (http://localhost:8000)"
+    Write-Host "  predict       Send a sample prediction request to the local API"
+    Write-Host "  docker-build  Build Docker image: mlops-app:latest"
+    Write-Host "  docker-run    Run Docker container on http://localhost:8000"
+    Write-Host "  k8s-deploy    Deploy to Kubernetes (2 replicas + service)"
+    Write-Host "  k8s-status    Check Kubernetes pods and services"
+    Write-Host "  k8s-delete    Remove Kubernetes deployment"
     Write-Host "==========================================================" -ForegroundColor Cyan
 }
 
 switch ($Action.ToLower()) {
-    "setup" {
-        Write-Host "📦 Setting up virtual environment..." -ForegroundColor Green
-        if (-not (Test-Path ".venv")) {
-            python -m venv .venv
-        }
-        & $VENV_PIP install --upgrade pip
-        & $VENV_PIP install -r requirements.txt
-        Write-Host "✅ Setup completed successfully!" -ForegroundColor Green
-    }
     "train" {
-        Write-Host "🏋️ Running Model Training Pipeline..." -ForegroundColor Green
-        & $VENV_PY -m src.train
+        Write-Host "🏋️ Training Machine Learning Model..." -ForegroundColor Green
+        & $VENV_PY train.py
     }
     "test" {
         Write-Host "🧪 Running Automated Tests..." -ForegroundColor Green
-        & $VENV_PYTEST -v tests/
+        & $VENV_PYTEST -v test_app.py
     }
     "serve" {
         Write-Host "🚀 Starting FastAPI server on http://localhost:8000 ..." -ForegroundColor Green
-        & $VENV_UVICORN app.main:app --host 0.0.0.0 --port 8000 --reload
+        & $VENV_UVICORN app:app --host 0.0.0.0 --port 8000 --reload
     }
-    "predict-sample" {
+    "predict" {
         Write-Host "🔮 Sending sample prediction request..." -ForegroundColor Green
         $body = @{
-            credit_score = 650
-            country = "Germany"
-            gender = "Female"
-            age = 42
-            tenure = 5
-            balance = 85000.50
-            num_of_products = 2
-            has_cr_card = 1
-            is_active_member = 1
-            estimated_salary = 65000.0
+            sepal_length = 5.1
+            sepal_width  = 3.5
+            petal_length = 1.4
+            petal_width  = 0.2
         } | ConvertTo-Json
 
         $response = Invoke-RestMethod -Uri "http://localhost:8000/predict" -Method Post -Body $body -ContentType "application/json"
+        Write-Host "`nResponse from Model:" -ForegroundColor Yellow
         $response | Format-List
     }
     "docker-build" {
-        Write-Host "🐳 Building Docker image: mlops-churn-api:latest ..." -ForegroundColor Green
-        docker build -t mlops-churn-api:latest .
+        Write-Host "🐳 Building Docker image..." -ForegroundColor Green
+        docker build -t mlops-app:latest .
     }
     "docker-run" {
-        Write-Host "🐳 Running Docker container on http://localhost:8000 ..." -ForegroundColor Green
-        docker run --rm -p 8000:8000 --name mlops-churn-app mlops-churn-api:latest
+        Write-Host "🐳 Running Docker container on port 8000..." -ForegroundColor Green
+        docker run --rm -p 8000:8000 --name mlops-container mlops-app:latest
     }
-    "compose-up" {
-        Write-Host "🚀 Launching stack with Docker Compose..." -ForegroundColor Green
-        docker-compose up --build -d
-        Write-Host "Services started:"
-        Write-Host "  - API:        http://localhost:8000 (Swagger: http://localhost:8000/docs)"
-        Write-Host "  - Prometheus: http://localhost:9090"
-    }
-    "compose-down" {
-        Write-Host "🛑 Stopping Docker Compose stack..." -ForegroundColor Green
-        docker-compose down
-    }
-    "k8s-apply" {
-        Write-Host "☸️ Applying Kubernetes manifests..." -ForegroundColor Green
-        kubectl apply -k k8s/
+    "k8s-deploy" {
+        Write-Host "☸️ Deploying to Kubernetes..." -ForegroundColor Green
+        kubectl apply -f k8s/deployment.yaml
     }
     "k8s-status" {
-        Write-Host "☸️ Checking Kubernetes cluster resources..." -ForegroundColor Green
-        kubectl get all,hpa -n mlops-prod
+        Write-Host "☸️ Checking Kubernetes status..." -ForegroundColor Green
+        kubectl get pods,services
     }
     "k8s-delete" {
         Write-Host "🗑️ Deleting Kubernetes resources..." -ForegroundColor Yellow
-        kubectl delete -k k8s/
+        kubectl delete -f k8s/deployment.yaml
     }
     default {
         Show-Help

@@ -1,15 +1,5 @@
-.git
-.github
 .venv
 __pycache__
-*.pyc
-*.pyo
-*.pyd
 .pytest_cache
-.coverage
-htmlcov/
-tests/
-.env
-*.log
-data/*.csv
-.DS_Store
+.git
+.github
